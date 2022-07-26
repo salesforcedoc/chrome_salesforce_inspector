@@ -79,7 +79,7 @@ class Model {
     this.exportStatus = "Ready";
     this.exportError = null;
     this.exportedData = null;
-    this.queryHistory = new QueryHistory("insextQueryHistory", 20);
+    this.queryHistory = new QueryHistory("insextQueryHistory", 150);
     this.selectedHistoryEntry = null;
     this.savedHistory = new QueryHistory("insextSavedQueryHistory", 50);
     this.selectedSavedEntry = null;
