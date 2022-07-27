@@ -71,6 +71,7 @@ class Model {
     this.showHelp = false;
     this.userInfo = "...";
     this.winInnerHeight = 0;
+    this.escapeExport = false;
     this.queryAll = false;
     this.queryTooling = false;
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
@@ -175,7 +176,10 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
+    // original 
+    // copyToClipboard(this.exportedData.csvSerialize(","));
     copyToClipboard(this.exportedData.csvSerialize(","));
+    //copyToClipboard(this.exportedData.csvSerialize(",").replaceAll("\x0d\x0a", "<br>").replaceAll("\x0a", "<br>").replaceAll("\x0d", "<br>").replaceAll("%", "%%"));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
@@ -804,7 +808,13 @@ function RecordTable(vm) {
     } else if (typeof cell == "object" && cell.attributes && cell.attributes.type) {
       return "[" + cell.attributes.type + "]";
     } else {
-      return "" + cell;
+      // original 
+      //return "" + cell;
+      if (vm.escapeExport) {
+        return "" + String(cell).replaceAll("\x0d\x0a", "<br>").replaceAll("\x0a", "<br>").replaceAll("\x0d", "<br>").replaceAll("%", "%%");
+      } else {
+        return "" + cell;
+      }
     }
   }
   let isVisible = (row, filter) => !filter || row.some(cell => cellToString(cell).toLowerCase().includes(filter.toLowerCase()));
@@ -830,6 +840,8 @@ function RecordTable(vm) {
         discoverColumns(record, "", row);
       }
     },
+    // original 
+    // csvSerialize: separator => rt.table.map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
     csvSerialize: separator => rt.table.map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
     updateVisibility() {
       let filter = vm.resultsFilter;
@@ -846,6 +858,7 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    this.onEscapeExportChange = this.onEscapeExportChange.bind(this);
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
@@ -862,6 +875,11 @@ class App extends React.Component {
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
+  }
+  onEscapeExportChange(e) {
+    let {model} = this.props;
+    model.escapeExport = e.target.checked;
+    model.didUpdate();
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1088,6 +1106,9 @@ class App extends React.Component {
           h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
           " ",
           h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+          " ",
+          h("input", {type: "checkbox", checked: model.escapeExport, onChange: this.onEscapeExportChange}),
+          " Escape Characters in CSV Export ",
           " ",
           h("input", {placeholder: "Filter results", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status"},
